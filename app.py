@@ -3,6 +3,7 @@ import sqlite3
 import pandas as pd
 from datetime import datetime
 import urllib.parse
+import base64
 
 # ------------------- DATABASE SETUP -------------------
 def create_connection():
@@ -69,48 +70,6 @@ def main():
 
     st.title("Happy Sweep PO Generator")
 
-    # Add custom CSS for styled buttons
-    st.markdown("""
-        <style>
-        .custom-button {
-            background-color: white;
-            color: black;
-            border: 1.5px solid #ccc;
-            padding: 8px 16px;
-            text-align: center;
-            text-decoration: none;
-            display: inline-block;
-            font-size: 14px;
-            margin: 4px;
-            transition-duration: 0.3s;
-            cursor: pointer;
-            border-radius: 4px;
-            width: 150px;
-        }
-
-        .custom-button:hover {
-            color: white;
-        }
-
-        /* Green Hover for CSV */
-        .csv-button:hover {
-            background-color: #4CAF50;
-        }
-
-        /* Dark Navy Hover for Email */
-        .email-button:hover {
-            background-color: #0a214c;
-        }
-
-        .button-container {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-        </style>
-    """, unsafe_allow_html=True)
-
     # Ensure table exists
     create_table()
 
@@ -143,13 +102,14 @@ def main():
 
         st.subheader("Purchase Orders")
 
-        # Button Container for aligned buttons
-        st.markdown('<div class="button-container">', unsafe_allow_html=True)
+        # Use columns() to align buttons on the same row
+        col1, col2 = st.columns([1, 1])
 
         # Send PO Email Button (Left)
-        last_po = df.iloc[-1]
-        subject = f"PO-{last_po['po_id']:04d}: {last_po['transaction_name']} - AED {last_po['amount']:,.2f}"
-        body = f"""
+        with col1:
+            last_po = df.iloc[-1]
+            subject = f"PO-{last_po['po_id']:04d}: {last_po['transaction_name']} - AED {last_po['amount']:,.2f}"
+            body = f"""
 Purchase Order (PO-{last_po['po_id']:04d})
 
 Transaction Date: {last_po['transaction_date']}
@@ -159,29 +119,18 @@ User: {last_po['user_name']}
 Payment Method: {last_po['payment_method']}
 Notes: {last_po['notes']}
 Created At: {last_po['created_at']}
-        """
-        recipients = ['raldoush12@gmail.com', 'happysweep.cleaning@gmail.com', 'tarekalkafery@gmail.com']
-        recipients_str = ','.join(recipients)  # Convert list to comma-separated string
-        mailto_link = f"mailto:{recipients_str}?subject={urllib.parse.quote(subject)}&body={urllib.parse.quote(body)}"
+            """
+            recipients = ['rssd78@gmail.com', 'happysweep.cleaning@gmail.com', 'tarekalkafery@gmail.com']
+            recipient_str = ','.join(recipients)  # Convert list to comma-separated string
+            mailto_link = f"mailto:{recipient_str}?subject={urllib.parse.quote(subject)}&body={urllib.parse.quote(body)}"
 
-        email_button_html = f'''
-            <a href="{mailto_link}" target="_blank" class="custom-button email-button">
-                Send PO Email
-            </a>
-        '''
-        st.markdown(email_button_html, unsafe_allow_html=True)
+            st.markdown(f'<a href="{mailto_link}" target="_blank" style="display: block; text-align: center; padding: 10px; background-color: #0a214c; color: white; text-decoration: none; border-radius: 4px;">Send PO Email</a>', unsafe_allow_html=True)
 
         # Download CSV Button (Right)
-        csv = df.to_csv(index=False).encode('utf-8')
-        download_button_html = f'''
-            <a href="data:file/csv;base64,{csv.decode('utf-8')}" download="purchase_orders.csv" class="custom-button csv-button">
-                Download CSV
-            </a>
-        '''
-        st.markdown(download_button_html, unsafe_allow_html=True)
-
-        # Close button container
-        st.markdown('</div>', unsafe_allow_html=True)
+        with col2:
+            csv = df.to_csv(index=False).encode()
+            b64 = base64.b64encode(csv).decode()  # Convert to Base64
+            st.markdown(f'<a href="data:file/csv;base64,{b64}" download="purchase_orders.csv" style="display: block; text-align: center; padding: 10px; background-color: #4CAF50; color: white; text-decoration: none; border-radius: 4px;">Download CSV</a>', unsafe_allow_html=True)
 
         # Display DataFrame as a table
         st.dataframe(df, use_container_width=True)
